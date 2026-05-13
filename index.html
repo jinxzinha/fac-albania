@@ -1,402 +1,896 @@
-
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>ALBANIA</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<style>
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:Arial;
-}
-
-body{
-background:#000;
-color:white;
-display:flex;
-min-height:100vh;
-background-image:url('https://r2.fivemanage.com/j54gW8QcGKPq6u9xZJLmv/file_0000000007a871fbaa201007af1b2c3e.png');
-background-size:cover;
-background-position:center;
-background-attachment:fixed;
-}
-
-.sidebar{
-width:250px;
-background:rgba(0,0,0,0.92);
-border-right:2px solid red;
-padding:20px;
-min-height:100vh;
-}
-
-.logo{
-width:100%;
-margin-bottom:20px;
-border-radius:15px;
-}
-
-.profile{
-text-align:center;
-margin-bottom:20px;
-}
-
-.profile img{
-width:90px;
-height:90px;
-border-radius:50%;
-border:3px solid red;
-object-fit:cover;
-}
-
-.profile h3{
-margin-top:10px;
-}
-
-.profile p{
-font-size:12px;
-color:#ff4d4d;
-}
-
-.menu button{
-width:100%;
-padding:14px;
-margin-bottom:10px;
-background:#111;
-border:1px solid red;
-color:white;
-border-radius:12px;
-cursor:pointer;
-}
-
-.menu button:hover,
-button.action:hover{
-opacity:0.9;
-}
-
-button{
-transition:0.2s;
-}
-
-button:active{
-transform:scale(0.98);
-}
-
-.main{
-flex:1;
-padding:20px;
-overflow:auto;
-}
-
-.card{
-background:rgba(0,0,0,0.88);
-border:1px solid red;
-border-radius:18px;
-padding:20px;
-margin-bottom:20px;
-box-shadow:0 0 20px rgba(255,0,0,0.25);
-backdrop-filter:blur(3px);
-}
-
-input, textarea, select{
-width:100%;
-padding:12px;
-margin-top:10px;
-margin-bottom:10px;
-background:#111;
-border:1px solid #333;
-color:white;
-border-radius:10px;
-}
-
-button.action{
-background:red;
-border:none;
-padding:12px;
-width:100%;
-border-radius:10px;
-color:white;
-cursor:pointer;
-font-weight:bold;
-}
-
-.gallery{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
-gap:15px;
-}
-
-.gallery img,
-.gallery video{
-width:100%;
-border-radius:12px;
-border:2px solid red;
-}
-
-.hidden{
-display:none;
-}
-
-.cover{
-width:100%;
-height:220px;
-object-fit:cover;
-border-radius:20px;
-border:2px solid red;
-margin-bottom:20px;
-}
-
-.rank{
-padding:12px;
-border:1px solid red;
-border-radius:12px;
-margin-bottom:10px;
-background:#111;
-}
-
-.small{
-font-size:12px;
-color:red;
-font-style:italic;
-}
-
-.footer{
-text-align:center;
-font-size:10px;
-color:red;
-margin-top:40px;
-}
-
-.muni-img{
-width:100%;
-border-radius:15px;
-border:2px solid red;
-margin-top:15px;
-}
-
-table{
-width:100%;
-border-collapse:collapse;
-margin-top:10px;
-}
-
-th,td{
-border:1px solid red;
-padding:10px;
-text-align:center;
-}
-
-th{
-background:red;
-}
-
-.approve{
-background:green;
-border:none;
-padding:8px;
-color:white;
-border-radius:8px;
-cursor:pointer;
-}
-
-.reject{
-background:#700;
-border:none;
-padding:8px;
-color:white;
-border-radius:8px;
-cursor:pointer;
-}
-
-canvas{
-max-width:100%;
-height:260px !important;
-margin-top:20px;
-}
-</style>
-</head>
-<body>
-
-<!-- MANTENHA O HTML DO BODY QUE VOCÊ JÁ TEM -->
-<!-- A PRINCIPAL CORREÇÃO ESTÁ NO SCRIPT ABAIXO -->
-
-<script>
-
-let usuarios = JSON.parse(localStorage.getItem("usuarios")) || [];
-let pendentes = JSON.parse(localStorage.getItem("pendentes")) || [];
-let vendas = JSON.parse(localStorage.getItem("vendas")) || [];
-let acoes = JSON.parse(localStorage.getItem("acoes")) || [];
-let galeria = JSON.parse(localStorage.getItem("galeria")) || [];
-let municoes = JSON.parse(localStorage.getItem("municoes")) || [];
-let logs = JSON.parse(localStorage.getItem("logs")) || [];
-
-let atual = JSON.parse(localStorage.getItem("usuarioAtual")) || null;
-let graficoPizza = null;
-
-function salvarTudo(){
-localStorage.setItem("usuarios", JSON.stringify(usuarios));
-localStorage.setItem("pendentes", JSON.stringify(pendentes));
-localStorage.setItem("vendas", JSON.stringify(vendas));
-localStorage.setItem("acoes", JSON.stringify(acoes));
-localStorage.setItem("galeria", JSON.stringify(galeria));
-localStorage.setItem("municoes", JSON.stringify(municoes));
-localStorage.setItem("logs", JSON.stringify(logs));
-}
-
-function registrarVenda(){
-
-let cliente = document.getElementById("cliente").value.trim();
-let membro = document.getElementById("membro").value.trim();
-let produto = document.getElementById("produto").value.trim();
-let valor = document.getElementById("valor").value.trim();
-
-if(!cliente || !membro || !produto || !valor){
-alert("Preencha todos os campos");
-return;
-}
-
-vendas.push({
-cliente,
-membro,
-produto,
-valor,
-data:new Date().toLocaleString()
-});
-
-salvarTudo();
-renderVendas();
-
-["cliente","membro","produto","valor"].forEach(id=>{
-document.getElementById(id).value = "";
-});
-
-alert("Venda registrada");
-}
-
-function registrarAcao(){
-
-let acao = document.getElementById("acaoNome").value.trim();
-let lider = document.getElementById("acaoLider").value.trim();
-let membros = document.getElementById("acaoMembros").value.trim();
-let resultado = document.getElementById("resultado").value;
-
-if(!acao || !lider || !membros){
-alert("Preencha todos os campos");
-return;
-}
-
-acoes.push({
-acao,
-lider,
-membros,
-resultado,
-data:new Date().toLocaleString()
-});
-
-salvarTudo();
-renderAcoes();
-
-["acaoNome","acaoLider","acaoMembros"].forEach(id=>{
-document.getElementById(id).value = "";
-});
-
-alert("Ação registrada");
-}
-
-function renderAcoes(){
-
-let vitorias = acoes.filter(a=>a.resultado === "VITÓRIA").length;
-let derrotas = acoes.filter(a=>a.resultado === "DERROTA").length;
-
-let total = vitorias + derrotas;
-
-let pv = total ? ((vitorias/total)*100).toFixed(1) : 0;
-let pd = total ? ((derrotas/total)*100).toFixed(1) : 0;
-
-document.getElementById("percentuais").innerHTML = `
-<div class="rank">Vitórias: ${pv}%</div>
-<div class="rank">Derrotas: ${pd}%</div>
-<div class="rank">Total de registros: ${total}</div>
-`;
-
-const ctx = document.getElementById("grafico");
-
-if(graficoPizza){
-graficoPizza.destroy();
-}
-
-graficoPizza = new Chart(ctx,{
-type:'pie',
-data:{
-labels:['Vitórias','Derrotas'],
-datasets:[{
-data:[vitorias, derrotas]
-}]
-},
-options:{
-responsive:true,
-maintainAspectRatio:false
-}
-});
-
-let html = "";
-
-[...acoes].reverse().forEach(a=>{
-html += `
-<div class="rank">
-${a.acao}<br>
-${a.resultado}<br>
-Líder: ${a.lider}<br>
-Membros: ${a.membros}<br>
-${a.data}
-</div>
-`;
-});
-
-document.getElementById("historicoAcoes").innerHTML = html;
-}
-
-function addMidia(){
-
-let input = document.getElementById("midiaFile");
-
-if(!input.files.length){
-alert("Selecione um arquivo");
-return;
-}
-
-let file = input.files[0];
-
-if(file.size > 20 * 1024 * 1024){
-alert("Arquivo muito grande");
-return;
-}
-
-let reader = new FileReader();
-
-reader.onload = function(event){
-
-galeria.push({
-tipo:file.type,
-arquivo:event.target.result,
-data:new Date().toLocaleString()
-});
-
-salvarTudo();
-renderGaleria();
-
-alert("Mídia publicada com sucesso");
-
-input.value = "";
-};
-
-reader.readAsDataURL(file);
-}
-
-</script>
-</body>
+<!DOCTYPE html>  <html lang="pt-BR">    
+<head>    
+<meta charset="UTF-8">    
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>    
+<title>ALBANIA</title>  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>  <style>    
+    
+*{    
+margin:0;    
+padding:0;    
+box-sizing:border-box;    
+font-family:Arial;    
+}    
+    
+body{    
+background:#000;    
+color:white;    
+display:flex;    
+min-height:100vh;    
+background-image:url('https://r2.fivemanage.com/j54gW8QcGKPq6u9xZJLmv/file_0000000007a871fbaa201007af1b2c3e.png');    
+background-size:cover;    
+background-position:center;    
+background-attachment:fixed;    
+}    
+    
+.sidebar{    
+width:250px;    
+background:rgba(0,0,0,0.92);    
+border-right:2px solid red;    
+padding:20px;    
+min-height:100vh;    
+}    
+    
+.logo{    
+width:100%;    
+margin-bottom:20px;    
+border-radius:15px;    
+}    
+    
+.profile{    
+text-align:center;    
+margin-bottom:20px;    
+}    
+    
+.profile img{    
+width:90px;    
+height:90px;    
+border-radius:50%;    
+border:3px solid red;    
+object-fit:cover;    
+}    
+    
+.profile h3{    
+margin-top:10px;    
+}    
+    
+.profile p{    
+font-size:12px;    
+color:#ff4d4d;    
+}    
+    
+.menu button{    
+width:100%;    
+padding:14px;    
+margin-bottom:10px;    
+background:#111;    
+border:1px solid red;    
+color:white;    
+border-radius:12px;    
+cursor:pointer;    
+}    
+    
+.menu button:hover{    
+background:red;    
+}    
+    
+.main{    
+flex:1;    
+padding:20px;    
+overflow:auto;    
+}    
+    
+.card{    
+background:rgba(0,0,0,0.88);    
+border:1px solid red;    
+border-radius:18px;    
+padding:20px;    
+margin-bottom:20px;    
+box-shadow:0 0 20px rgba(255,0,0,0.25);    
+}    
+    
+input, textarea, select{    
+width:100%;    
+padding:12px;    
+margin-top:10px;    
+margin-bottom:10px;    
+background:#111;    
+border:1px solid #333;    
+color:white;    
+border-radius:10px;    
+}    
+    
+button.action{    
+background:red;    
+border:none;    
+padding:12px;    
+width:100%;    
+border-radius:10px;    
+color:white;    
+cursor:pointer;    
+font-weight:bold;    
+}    
+    
+.gallery{    
+display:grid;    
+grid-template-columns:repeat(auto-fit,minmax(200px,1fr));    
+gap:15px;    
+}    
+    
+.gallery img,    
+.gallery video{    
+width:100%;    
+border-radius:12px;    
+border:2px solid red;    
+}    
+    
+.hidden{    
+display:none;    
+}    
+    
+.cover{    
+width:100%;    
+height:220px;    
+object-fit:cover;    
+border-radius:20px;    
+border:2px solid red;    
+margin-bottom:20px;    
+}    
+    
+.rank{    
+padding:12px;    
+border:1px solid red;    
+border-radius:12px;    
+margin-bottom:10px;    
+background:#111;    
+}    
+    
+.small{    
+font-size:12px;    
+color:red;    
+font-style:italic;    
+}    
+    
+.footer{    
+text-align:center;    
+font-size:10px;    
+color:red;    
+margin-top:40px;    
+}    
+    
+.muni-img{    
+width:100%;    
+border-radius:15px;    
+border:2px solid red;    
+margin-top:15px;    
+}    
+    
+table{    
+width:100%;    
+border-collapse:collapse;    
+margin-top:10px;    
+}    
+    
+th,td{    
+border:1px solid red;    
+padding:10px;    
+text-align:center;    
+}    
+    
+th{    
+background:red;    
+}    
+    
+.approve{    
+background:green;    
+border:none;    
+padding:8px;    
+color:white;    
+border-radius:8px;    
+cursor:pointer;    
+}    
+    
+.reject{    
+background:#700;    
+border:none;    
+padding:8px;    
+color:white;    
+border-radius:8px;    
+cursor:pointer;    
+}    
+    
+</style>  </head>  <body>  <div class="sidebar">  <img class="logo"    
+src="https://r2.fivemanage.com/j54gW8QcGKPq6u9xZJLmv/Picsart_26-05-10_04-31-45-178.png">  
+  
+<div class="profile">  <img id="avatar" src="https://i.imgur.com/6VBx3io.png">  <h3 id="profileName">Visitante</h3>  <p id="profileId">ID: ---</p>  <input type="file" id="avatarUpload">  <button class="action" onclick="alterarAvatar()">    
+ALTERAR FOTO    
+</button>  </div>  <div class="menu">  <button onclick="showTab('municoes')">MUNIÇÕES</button>  
+<button onclick="showTab('vendas')">REGISTRO DE VENDAS</button>  
+<button onclick="showTab('acoes')">REGISTRO DE AÇÕES</button>  
+<button onclick="showTab('galeria')">GALERIA</button>  
+<button id="adminBtn" class="hidden" onclick="showTab('admin')">PAINEL ADMIN</button>  
+<button onclick="logout()">SAIR</button>  
+  
+</div>  </div>  <div class="main">  <img id="coverImage" class="cover"    
+src="https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=1400">  
+  
+<div id="loginBox" class="card">  <h2>LOGIN</h2>  <input id="loginUser" placeholder="Usuário">    
+<input id="loginPass" type="password" placeholder="Senha">  <button class="action" onclick="login()">ENTRAR</button>  
+  
+<hr style="margin:20px 0;border-color:red;">  <h2>SOLICITAR CADASTRO</h2>  <input id="cadNome" placeholder="Nome">    
+<input id="cadId" placeholder="ID">    
+<input id="cadUser" placeholder="Usuário">    
+<input id="cadPass" type="password" placeholder="Senha">  <input type="file" id="cadFoto">  <button class="action" onclick="solicitarCadastro()">    
+SOLICITAR    
+</button>  </div>  <div id="conteudo" class="hidden">  <div id="municoes" class="card">  <h2>MUNIÇÕES</h2>  <div id="municoesImgs"></div>  <div id="adminMunicao" class="hidden">  <input type="file" id="novaMunicao">  <button class="action" onclick="addMunicao()">    
+ADICIONAR IMAGEM    
+</button>  </div>  </div>  <div id="vendas" class="card hidden">  <h2>RANKING DE VENDAS</h2>  <div id="ranking"></div>  <h2 style="margin-top:20px;">REGISTRO DE VENDAS</h2>  <input id="cliente" placeholder="ID Cliente">    
+<input id="membro" placeholder="ID Membro">    
+<input id="produto" placeholder="Venda">    
+<input id="valor" placeholder="Valor">  <button class="action" onclick="registrarVenda()">    
+REGISTRAR    
+</button>  <div id="historicoVendas"></div>  </div>  <div id="acoes" class="card hidden">  <h2>REGISTRO DE AÇÕES</h2>  <input id="acaoNome" placeholder="Ação">    
+<input id="acaoLider" placeholder="ID Líder">    
+<input id="acaoMembros" placeholder="Membros">  <select id="resultado">    
+<option value="VITÓRIA">VITÓRIA</option>    
+<option value="DERROTA">DERROTA</option>    
+</select>  <button class="action" onclick="registrarAcao()">    
+REGISTRAR    
+</button>  <canvas id="grafico"></canvas>  
+  
+<div id="percentuais"></div>  <div id="historicoAcoes"></div>  </div>  <div id="galeria" class="card hidden">  <h2>GALERIA</h2>  <input type="file" id="midiaFile">  <button class="action" onclick="addMidia()">    
+PUBLICAR    
+</button>  <div class="gallery" id="galeriaMidia"></div>  </div>  <div id="admin" class="card hidden">  <h2>PAINEL ADMIN</h2>  <h3>ALTERAR FUNDO</h3>  <input id="novoFundo" placeholder="URL do fundo">  <button class="action" onclick="alterarFundo()">    
+SALVAR    
+</button>  <h3 style="margin-top:20px;">ALTERAR CAPA</h3>  <input id="novaCapa" placeholder="URL da capa">  <button class="action" onclick="alterarCapa()">    
+SALVAR    
+</button>  <h3 style="margin-top:20px;">SOLICITAÇÕES</h3>  <table>    
+<thead>    
+<tr>    
+<th>NOME</th>    
+<th>USUÁRIO</th>    
+<th>AÇÃO</th>    
+</tr>    
+</thead>  <tbody id="solicitacoes"></tbody>  </table>  <h3 style="margin-top:20px;">MEMBROS</h3>  <div id="membros"></div>  <h3 style="margin-top:20px;">LOGS DO SITE</h3>  <div id="logsArea"></div>  </div>  </div>  <div class="footer">    
+powered by jinxsz©    
+</div>  </div>  <script>    
+    
+let usuarios = JSON.parse(localStorage.getItem("usuarios")) || [];    
+let pendentes = JSON.parse(localStorage.getItem("pendentes")) || [];    
+let vendas = JSON.parse(localStorage.getItem("vendas")) || [];    
+let acoes = JSON.parse(localStorage.getItem("acoes")) || [];    
+let galeria = JSON.parse(localStorage.getItem("galeria")) || [];    
+let municoes = JSON.parse(localStorage.getItem("municoes")) || [];    
+let logs = JSON.parse(localStorage.getItem("logs")) || [];    
+    
+let atual = JSON.parse(localStorage.getItem("usuarioAtual")) || null;    
+    
+function salvarTudo(){    
+    
+localStorage.setItem("usuarios", JSON.stringify(usuarios));    
+localStorage.setItem("pendentes", JSON.stringify(pendentes));    
+localStorage.setItem("vendas", JSON.stringify(vendas));    
+localStorage.setItem("acoes", JSON.stringify(acoes));    
+localStorage.setItem("galeria", JSON.stringify(galeria));    
+localStorage.setItem("municoes", JSON.stringify(municoes));    
+localStorage.setItem("logs", JSON.stringify(logs));    
+    
+}    
+    
+function adicionarLog(texto){    
+    
+logs.unshift({    
+texto:texto,    
+data:new Date().toLocaleString()    
+});    
+    
+salvarTudo();    
+    
+renderLogs();    
+    
+}    
+    
+function showTab(tab){    
+    
+document.getElementById("municoes").classList.add("hidden");    
+document.getElementById("vendas").classList.add("hidden");    
+document.getElementById("acoes").classList.add("hidden");    
+document.getElementById("galeria").classList.add("hidden");    
+document.getElementById("admin").classList.add("hidden");    
+    
+document.getElementById(tab).classList.remove("hidden");    
+    
+}    
+    
+function login(){    
+    
+let u = document.getElementById("loginUser").value;    
+let p = document.getElementById("loginPass").value;    
+    
+if(u === "facalb22" && p === "Jinx@01"){    
+    
+atual = {    
+nome:"Administrador",    
+id:"ALBANIA ADM",    
+foto:localStorage.getItem("adminFoto") || "https://i.imgur.com/6VBx3io.png",    
+admin:true    
+};    
+    
+localStorage.setItem("usuarioAtual", JSON.stringify(atual));    
+    
+entrar();    
+return;    
+    
+}    
+    
+let usuario = usuarios.find(x => x.user === u && x.pass === p);    
+    
+if(!usuario){    
+alert("Login inválido");    
+return;    
+}    
+    
+usuario.lastLogin = new Date().toLocaleString();    
+    
+atual = usuario;    
+    
+localStorage.setItem("usuarioAtual", JSON.stringify(atual));    
+    
+salvarTudo();    
+    
+entrar();    
+    
+}    
+    
+function entrar(){    
+    
+document.getElementById("loginBox").classList.add("hidden");    
+document.getElementById("conteudo").classList.remove("hidden");    
+    
+document.getElementById("profileName").innerText = atual.nome;    
+document.getElementById("profileId").innerText = "ID: " + atual.id;    
+    
+if(atual.foto){    
+document.getElementById("avatar").src = atual.foto;    
+}    
+    
+if(atual.admin){    
+document.getElementById("adminBtn").classList.remove("hidden");    
+document.getElementById("adminMunicao").classList.remove("hidden");    
+}    
+    
+renderTudo();    
+    
+}    
+    
+function logout(){    
+    
+localStorage.removeItem("usuarioAtual");    
+    
+location.reload();    
+    
+}    
+    
+function solicitarCadastro(){    
+    
+let file = document.getElementById("cadFoto").files[0];    
+    
+if(!file){    
+alert("Selecione uma foto");    
+return;    
+}    
+    
+let reader = new FileReader();    
+    
+reader.onload = function(e){    
+    
+pendentes.push({    
+nome:document.getElementById("cadNome").value,    
+id:document.getElementById("cadId").value,    
+user:document.getElementById("cadUser").value,    
+pass:document.getElementById("cadPass").value,    
+foto:e.target.result    
+});    
+    
+salvarTudo();    
+    
+renderSolicitacoes();    
+    
+alert("Solicitação enviada com sucesso");    
+    
+};    
+    
+reader.readAsDataURL(file);    
+    
+}    
+    
+function aprovar(i){    
+    
+let aprovado = {    
+...pendentes[i],    
+lastLogin:"Nunca"    
+};    
+    
+usuarios.push(aprovado);    
+    
+adicionarLog("Cadastro aprovado: " + aprovado.nome);    
+    
+pendentes.splice(i,1);    
+    
+salvarTudo();    
+    
+renderTudo();    
+    
+alert("Usuário aprovado com sucesso");    
+    
+}    
+    
+function recusar(i){    
+    
+let recusado = pendentes[i];    
+    
+adicionarLog("Cadastro recusado: " + recusado.nome);    
+    
+pendentes.splice(i,1);    
+    
+salvarTudo();    
+    
+renderTudo();    
+    
+alert("Solicitação recusada");    
+    
+}    
+    
+function renderSolicitacoes(){    
+    
+let html = "";    
+    
+pendentes.forEach((p,i)=>{    
+    
+html += `    
+<tr>    
+<td>${p.nome}</td>    
+<td>${p.user}</td>    
+<td>    
+<button class="approve" onclick="aprovar(${i})">APROVAR</button>    
+<button class="reject" onclick="recusar(${i})">RECUSAR</button>    
+</td>    
+</tr>    
+`;    
+    
+});    
+    
+document.getElementById("solicitacoes").innerHTML = html;    
+    
+}    
+    
+function renderMembros(){    
+    
+let html = "";    
+    
+usuarios.forEach(u=>{    
+    
+html += `    
+<div class="rank">    
+<b>${u.nome}</b><br>    
+Usuário: ${u.user}<br>    
+<div class="small">    
+Último login: ${u.lastLogin || "Nunca"}    
+</div>    
+</div>    
+`;    
+    
+});    
+    
+document.getElementById("membros").innerHTML = html;    
+    
+}    
+    
+function registrarVenda(){    
+    
+vendas.push({    
+cliente:document.getElementById("cliente").value,    
+membro:document.getElementById("membro").value,    
+produto:document.getElementById("produto").value,    
+valor:document.getElementById("valor").value,    
+data:new Date().toLocaleString()    
+});    
+    
+salvarTudo();    
+    
+renderVendas();    
+    
+alert("Venda registrada");    
+    
+}    
+    
+function renderVendas(){    
+    
+let rankObj = {};    
+    
+vendas.forEach(v=>{    
+rankObj[v.membro] = (rankObj[v.membro] || 0) + 1;    
+});    
+    
+let ordem = Object.entries(rankObj).sort((a,b)=>b[1]-a[1]);    
+    
+let top = "";    
+    
+if(ordem[0]) top += `<div class="rank">👑1° ${ordem[0][0]} - ${ordem[0][1]} vendas</div>`;    
+if(ordem[1]) top += `<div class="rank">🥈2° ${ordem[1][0]} - ${ordem[1][1]} vendas</div>`;    
+if(ordem[2]) top += `<div class="rank">🥉3° ${ordem[2][0]} - ${ordem[2][1]} vendas</div>`;    
+    
+document.getElementById("ranking").innerHTML = top;    
+    
+let hist = "";    
+    
+[...vendas].reverse().forEach(v=>{    
+    
+hist += `    
+<div class="rank">    
+${v.membro} vendeu ${v.produto}<br>    
+Valor: ${v.valor}<br>    
+${v.data}    
+</div>    
+`;    
+    
+});    
+    
+document.getElementById("historicoVendas").innerHTML = hist;    
+    
+}    
+    
+function registrarAcao(){    
+    
+acoes.push({    
+acao:document.getElementById("acaoNome").value,    
+lider:document.getElementById("acaoLider").value,    
+membros:document.getElementById("acaoMembros").value,    
+resultado:document.getElementById("resultado").value    
+});    
+    
+salvarTudo();    
+    
+renderAcoes();    
+    
+alert("Ação registrada");    
+    
+}    
+    
+function renderAcoes(){    
+    
+let vitorias = acoes.filter(a=>a.resultado==="VITÓRIA").length;    
+let derrotas = acoes.filter(a=>a.resultado==="DERROTA").length;    
+    
+let total = vitorias + derrotas;    
+    
+let pv = total ? ((vitorias/total)*100).toFixed(1) : 0;    
+let pd = total ? ((derrotas/total)*100).toFixed(1) : 0;    
+    
+document.getElementById("percentuais").innerHTML = `    
+<div class="rank">Vitórias: ${pv}%</div>    
+<div class="rank">Derrotas: ${pd}%</div>    
+<div class="rank">Total de registros: ${total}</div>    
+`;    
+    
+new Chart(document.getElementById("grafico"),{    
+type:'pie',    
+data:{    
+labels:['Vitórias','Derrotas'],    
+datasets:[{    
+data:[vitorias, derrotas]    
+}]    
+}    
+});    
+    
+let html = "";    
+    
+[...acoes].reverse().forEach(a=>{    
+    
+html += `    
+<div class="rank">    
+${a.acao}<br>    
+${a.resultado}    
+</div>    
+`;    
+    
+});    
+    
+document.getElementById("historicoAcoes").innerHTML = html;    
+    
+}    
+    
+function addMidia(){    
+    
+let input = document.getElementById("midiaFile");    
+    
+if(!input.files.length){    
+alert("Selecione um arquivo");    
+return;    
+}    
+    
+let file = input.files[0];    
+    
+let reader = new FileReader();    
+    
+reader.onload = function(event){    
+    
+galeria.push({    
+tipo:file.type,    
+arquivo:event.target.result    
+});    
+    
+salvarTudo();    
+    
+renderGaleria();    
+    
+alert("Mídia publicada com sucesso");    
+    
+input.value = "";    
+    
+};    
+    
+reader.readAsDataURL(file);    
+    
+}    
+    
+function renderGaleria(){    
+    
+let html = "";    
+    
+galeria.forEach((g,index)=>{    
+    
+if(g.tipo && g.tipo.includes("video")){    
+    
+html += `    
+<div class="rank">    
+    
+<video controls style="width:100%;">    
+<source src="${g.arquivo}">    
+</video>    
+    
+${atual && atual.admin ? `    
+<button class="reject" onclick="removerMidia(${index})">    
+REMOVER    
+</button>    
+` : ""}    
+    
+</div>    
+`;    
+    
+}else{    
+    
+html += `    
+<div class="rank">    
+    
+<img src="${g.arquivo}" style="width:100%; border-radius:12px;">    
+    
+${atual && atual.admin ? `    
+<button class="reject" onclick="removerMidia(${index})">    
+REMOVER    
+</button>    
+` : ""}    
+    
+</div>    
+`;    
+    
+}    
+    
+});    
+    
+document.getElementById("galeriaMidia").innerHTML = html;    
+    
+}    
+    
+function addMunicao(){    
+    
+if(!atual || !atual.admin){    
+alert("Somente admin");    
+return;    
+}    
+    
+let input = document.getElementById("novaMunicao");    
+    
+if(!input.files.length){    
+alert("Selecione uma imagem");    
+return;    
+}    
+    
+let file = input.files[0];    
+    
+let reader = new FileReader();    
+    
+reader.onload = function(event){    
+    
+municoes.push(event.target.result);    
+    
+salvarTudo();    
+    
+renderMunicoes();    
+    
+alert("Imagem enviada com sucesso");    
+    
+input.value = "";    
+    
+};    
+    
+reader.readAsDataURL(file);    
+    
+}    
+    
+function renderMunicoes(){    
+    
+let html = "";    
+    
+municoes.forEach((m,index)=>{    
+    
+html += `    
+<div class="rank">    
+    
+<img class="muni-img" src="${m}">    
+    
+${atual && atual.admin ? `    
+<button class="reject" onclick="removerMunicao(${index})">    
+REMOVER    
+</button>    
+` : ""}    
+    
+</div>    
+`;    
+    
+});    
+    
+document.getElementById("municoesImgs").innerHTML = html;    
+    
+}    
+    
+function removerMidia(index){    
+    
+if(!atual || !atual.admin){    
+return;    
+}    
+    
+galeria.splice(index,1);    
+    
+salvarTudo();    
+    
+renderGaleria();    
+    
+}    
+    
+function removerMunicao(index){    
+    
+if(!atual || !atual.admin){    
+return;    
+}    
+    
+municoes.splice(index,1);    
+    
+salvarTudo();    
+    
+renderMunicoes();    
+    
+}    
+    
+function alterarAvatar(){    
+    
+let file = document.getElementById("avatarUpload").files[0];    
+    
+if(!file){    
+alert("Selecione uma foto");    
+return;    
+}    
+    
+let reader = new FileReader();    
+    
+reader.onload = function(e){    
+    
+document.getElementById("avatar").src = e.target.result;    
+    
+if(atual.admin){    
+    
+localStorage.setItem("adminFoto", e.target.result);    
+    
+}else{    
+    
+let idx = usuarios.findIndex(x=>x.user===atual.user);    
+    
+if(idx !== -1){    
+    
+usuarios[idx].foto = e.target.result;    
+    
+salvarTudo();    
+    
+}    
+    
+}    
+    
+alert("Foto atualizada");    
+    
+};    
+    
+reader.readAsDataURL(file);    
+    
+}    
+    
+function alterarFundo(){    
+    
+let url = document.getElementById("novoFundo").value;    
+    
+localStorage.setItem("fundo", url);    
+    
+document.body.style.backgroundImage = `url('${url}')`;    
+    
+alert("Fundo salvo");    
+    
+}    
+    
+function alterarCapa(){    
+    
+let url = document.getElementById("novaCapa").value;    
+    
+localStorage.setItem("capa", url);    
+    
+document.getElementById("coverImage").src = url;    
+    
+alert("Capa salva");    
+    
+}    
+    
+function renderLogs(){    
+    
+let area = document.getElementById("logsArea");    
+    
+if(!area) return;    
+    
+let html = "";    
+    
+logs.forEach(l=>{    
+    
+html += `    
+<div class="rank">    
+${l.texto}    
+<div class="small">    
+${l.data}    
+</div>    
+</div>    
+`;    
+    
+});    
+    
+area.innerHTML = html;    
+    
+}    
+    
+function renderTudo(){    
+    
+renderSolicitacoes();    
+renderMembros();    
+renderVendas();    
+renderAcoes();    
+renderGaleria();    
+renderMunicoes();    
+renderLogs();    
+    
+}    
+    
+window.onload = ()=>{    
+    
+let fundo = localStorage.getItem("fundo");    
+let capa = localStorage.getItem("capa");    
+    
+if(fundo){    
+document.body.style.backgroundImage = `url('${fundo}')`;    
+}    
+    
+if(capa){    
+document.getElementById("coverImage").src = capa;    
+}    
+    
+if(atual){    
+entrar();    
+}    
+    
+};    
+    
+</script>  </body>    
 </html>
